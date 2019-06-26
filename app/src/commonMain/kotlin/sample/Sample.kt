@@ -1,6 +1,9 @@
 package sample
 
-import io.ktor.client.HttpClient
+import kotlinx.coroutines.CoroutineDispatcher
+
+internal expect val DispatcherIO: CoroutineDispatcher
+internal expect val DispatcherMain: CoroutineDispatcher
 
 expect class Sample() {
     fun checkMe(): Int
@@ -11,6 +14,8 @@ expect object Platform {
 }
 
 fun hello(): String = "Hello2 from ${Platform.name}"
+
+expect fun log(msg: String)
 
 class Proxy {
     fun proxyHello() = hello()

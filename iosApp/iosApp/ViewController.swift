@@ -8,9 +8,29 @@ class ViewController: UIViewController {
         super.viewDidLoad()
         label.text = Proxy().proxyHello()
         
-        api.about { (description) in
-            self.label.text = description
+        class SwiftView: SampleView {
+            
+            let mainLabel: UILabel
+            
+            init(label: UILabel) {
+                self.mainLabel = label
+            }
+            
+            func setLabel(text: String) {
+                self.mainLabel.text = text
+            }
         }
+        
+        let vm = SamplePresenter()
+        vm.view = SwiftView(label: self.label)
+        vm.getData()
+    
+        
+        /*api.about { (description) in
+            self.label.text = description
+        }*/
+        
+        label.text = "Test"
     }
 
     override func didReceiveMemoryWarning() {
