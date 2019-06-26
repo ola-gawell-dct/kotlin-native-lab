@@ -1,5 +1,7 @@
 package sample
 
+import io.ktor.client.HttpClient
+
 expect class Sample() {
     fun checkMe(): Int
 }

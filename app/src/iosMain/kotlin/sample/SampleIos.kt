@@ -1,5 +1,7 @@
 package sample
 
+import io.ktor.client.HttpClient
+
 actual class Sample {
     actual fun checkMe() = 7
 }
