@@ -1,11 +1,13 @@
 plugins {
     id 'kotlin-multiplatform'
+    id 'kotlinx-serialization'
 }
 repositories {
     google()
-    jcenter()
     mavenCentral()
+    jcenter()
 }
+
 apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android-extensions'
 apply plugin: 'kotlin-kapt'
@@ -14,16 +16,19 @@ android {
     compileSdkVersion 28
     defaultConfig {
         applicationId 'com.example.kotlinnativelab'
-        minSdkVersion 15
+        minSdkVersion 23
         targetSdkVersion 28
         versionCode 1
-        versionName '1.0'
+        versionName '0.1'
         testInstrumentationRunner 'android.support.test.runner.AndroidJUnitRunner'
     }
     buildTypes {
         release {
             minifyEnabled false
         }
+    }
+    packagingOptions {
+        exclude 'META-INF/*.kotlin_module'
     }
 }
 
@@ -36,9 +41,10 @@ dependencies {
 }
 
 kotlin {
+
     targets {
         fromPreset(presets.android, 'android')
-        fromPreset(presets.iosX64, 'ios') { //iosX64 is just for the iOS Simulator
+        fromPreset(presets.iosX64, 'ios') {
             binaries {
                 framework {
                     baseName = "app"
@@ -48,31 +54,56 @@ kotlin {
     }
 
     sourceSets {
-        commonMain {
-            dependencies {
-                implementation kotlin('stdlib-common')
+        sourceSets {
+            commonMain {
+                dependencies {
+                    implementation kotlin('stdlib-common')
+                    implementation "io.ktor:ktor-client-core:$ktor_version"
+                    implementation "io.ktor:ktor-client-json:$ktor_version"
+                    implementation "io.ktor:ktor-client-serialization:$ktor_version"
+
+                    implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core-common:$kotlinx_coroutines_version"
+                    implementation "org.jetbrains.kotlinx:kotlinx-serialization-runtime:$kotlinx_serialization_version"
+                }
             }
-        }
-        commonTest {
-            dependencies {
-        		implementation kotlin('test-common')
-        		implementation kotlin('test-annotations-common')
+            commonTest {
+                dependencies {
+                    implementation kotlin('test-common')
+                    implementation kotlin('test-annotations-common')
+                }
             }
-        }
-        androidMain {
-            dependencies {
-                implementation kotlin('stdlib')
+            androidMain {
+                dependencies {
+                    implementation kotlin('stdlib')
+                    implementation "org.jetbrains.kotlinx:kotlinx-coroutines-android:$kotlinx_coroutines_version"
+                    implementation "org.jetbrains.kotlinx:kotlinx-serialization-runtime:$kotlinx_serialization_version"
+
+                    implementation "io.ktor:ktor-client-core-jvm:$ktor_version"
+                    implementation "io.ktor:ktor-client-json-jvm:$ktor_version"
+                    implementation "io.ktor:ktor-client-serialization-jvm:$ktor_version"
+                    implementation "io.ktor:ktor-client-android:$ktor_version"
+                }
             }
-        }
-        androidTest {
-            dependencies {
-                implementation kotlin('test')
-                implementation kotlin('test-junit')
+            androidTest {
+                dependencies {
+                    implementation kotlin('test')
+                    implementation kotlin('test-junit')
+                }
             }
-        }
-        iosMain {
-        }
-        iosTest {
+            iosMain {
+                dependencies {
+                    implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core-native:$kotlinx_coroutines_version"
+                    implementation "org.jetbrains.kotlinx:kotlinx-serialization-runtime-native:$kotlinx_serialization_version"
+
+                    implementation "io.ktor:ktor-client-ios-iosx64:$ktor_version"
+                    implementation "io.ktor:ktor-client-ios:$ktor_version"
+                    implementation "io.ktor:ktor-client-core-native:$ktor_version"
+                    implementation "io.ktor:ktor-client-json-native:$ktor_version"
+                    implementation "io.ktor:ktor-client-serialization-iosx64:$ktor_version"
+                }
+            }
+            iosTest {
+            }
         }
     }
 }
@@ -90,11 +121,13 @@ task copyFramework {
     doLast {
         def srcFile = kotlin.targets."$target".binaries.getFramework(buildType).outputFile
         def targetDir = getProperty('configuration.build.dir')
+        def frameworkName = kotlin.targets."$target".binaries.getFramework(buildType).baseName
+
         copy {
             from srcFile.parent
             into targetDir
-            include 'app.framework/**'
-            include 'app.framework.dSYM'
+            include "${frameworkName}.framework/**"
+            include "${frameworkName}.framework.dSYM"
         }
     }
 }

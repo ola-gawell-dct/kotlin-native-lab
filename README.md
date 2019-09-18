@@ -6,7 +6,7 @@
 1. Install latest Xcode (if you want to test the app on iOS)
 1. Install Gradle CLI
 
-## Step 1
+## Step 1 - Create Project
 
 ### Create the Project
 
@@ -84,6 +84,12 @@ classpath "com.android.tools.build:gradle:$gradle_android_version"
 classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
 ```
 
+3. And you might need to add this to repositories
+
+```ruby
+mavenCentral()
+```
+
 3. Open `app/src/main/java/Sample/SampleAndroid.kt` and change
 
 ```
@@ -104,8 +110,8 @@ plugins {
 }
 repositories {
     google()
-    jcenter()
     mavenCentral()
+    jcenter()
 }
 apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android-extensions'
@@ -246,4 +252,255 @@ Open the XCode project found at `<projectRoot>/iosApp/iosApp.xcodeproj`. Press t
 
 Look around in the project and see if you can figure out why the Android and iOS apps show different strings. Read more about it here [Platform-Specific Declarations](https://kotlinlang.org/docs/reference/platform-specific-declarations.html). Try some small changes and see how they effect the different platforms.
 
-## Step 2
+## Step 2 - HTTP Calls
+
+Add this to the `build.gradle` in app and sync.
+
+```
+commonMain {
+    dependencies {
+        ...
+        implementation "io.ktor:ktor-client-core:$ktor_version"
+        implementation "io.ktor:ktor-client-json:$ktor_version"
+        implementation "io.ktor:ktor-client-serialization:$ktor_version"
+        ...
+    }
+}
+androidMain {
+    dependencies {
+        ...
+        implementation "io.ktor:ktor-client-core-jvm:$ktor_version"
+        implementation "io.ktor:ktor-client-json-jvm:$ktor_version"
+        implementation "io.ktor:ktor-client-serialization-jvm:$ktor_version"
+        implementation "io.ktor:ktor-client-android:$ktor_version"
+        ...
+    }
+}
+iosMain {
+    dependencies {
+        ...
+        implementation "io.ktor:ktor-client-ios-iosx64:$ktor_version"
+        implementation "io.ktor:ktor-client-ios:$ktor_version"
+        implementation "io.ktor:ktor-client-core-native:$ktor_version"
+        implementation "io.ktor:ktor-client-json-native:$ktor_version"
+        implementation "io.ktor:ktor-client-serialization-iosx64:$ktor_version"
+        ...
+    }
+}
+```
+
+Let's create a API class that uses ktor. In `commonMain` add this class.
+
+```kotlin
+package sample
+
+import io.ktor.client.HttpClient
+import io.ktor.client.features.json.JsonFeature
+import io.ktor.client.request.get
+
+interface API {
+    suspend fun getUsers(): String
+}
+
+class KtorAPI(
+    private val baseUrl: String = "https://reqres.in/api/"
+): API {
+
+    private val client = HttpClient()
+
+    private fun buildUrl(path: String): String {
+        return "${baseUrl}${path}"
+    }
+
+    override suspend fun getUsers(): String {
+        return client.get(buildUrl("users"))
+    }
+}
+```
+
+Try to use it in the SampleAndroid class. You will notice that `client.get()` is a suspend function so we need to call from inside a coroutine scope.
+
+### Add Simple Coroutines
+
+Kotlin/Native does not have full coroutines support. You can only use coroutines on the main thread. But right now that's all we need. We only want to post the result from the get request on the main thread.
+
+Add the following in app's `build.gradle`
+
+```ruby
+commonMain {
+    dependencies {
+        ...
+        implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core-common:$kotlinx_coroutines_version"
+        ...
+    }
+}
+androidMain {
+    dependencies {
+        ...
+        implementation "org.jetbrains.kotlinx:kotlinx-coroutines-android:$kotlinx_coroutines_version"
+        ...
+    }
+}
+iosMain {
+    dependencies {
+        ...
+        implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core-native:$kotlinx_coroutines_version"
+        ...
+    }
+}
+```
+
+Create a simple interactor that creates a coroutines scope and calls the API function. It could look something like this:
+
+```kotlin
+package sample
+
+import kotlinx.coroutines.*
+import kotlin.coroutines.CoroutineContext
+
+class GetUsersUseCase(
+    val api: API,
+    var context: CoroutineContext = MainDispatcher
+) {
+
+    private var job: Job = Job()
+
+    fun execute(
+        onComplete: (String) -> Unit,
+        onError: ((Throwable) -> Unit)? = null,
+        onCancel: ((CancellationException) -> Unit)? = null
+    ) {
+        job = Job()
+        CoroutineScope(context + job).launch {
+            try {
+                val result = api.getPosts()
+                onComplete(result)
+            } catch (cancellationException: CancellationException) {
+                onCancel?.invoke(cancellationException)
+            } catch (e: Exception) {
+                onError?.invoke(e)
+            }
+        }
+    }
+}
+```
+
+You need to specify what `MainDispatcher` is on both platforms. Use `actual` and `expect` to do that. The implementation for iOS is a bit tricky so you can copy this:
+
+```kotlin
+internal actual val MainDispatcher: CoroutineDispatcher = NsQueueDispatcher(dispatch_get_main_queue())
+
+internal class NsQueueDispatcher(
+    private val dispatchQueue: dispatch_queue_t
+) : CoroutineDispatcher() {
+    override fun dispatch(context: CoroutineContext, block: Runnable) {
+        dispatch_async(dispatchQueue) {
+            block.run()
+        }
+    }
+}
+```
+
+Try to use the use case from the Android Sample App (and iOS if you want).
+
+### Parse JSON
+
+Add the following dependencies to app's `build.gradle`
+
+```ruby
+commonMain {
+    dependencies {
+        ...
+        implementation "io.ktor:ktor-client-serialization:$ktor_version"
+        implementation "org.jetbrains.kotlinx:kotlinx-serialization-runtime:$kotlinx_serialization_version"
+        ...
+    }
+}
+androidMain {
+    dependencies {
+        implementation "org.jetbrains.kotlinx:kotlinx-serialization-runtime:$kotlinx_serialization_version"
+        implementation "io.ktor:ktor-client-serialization-jvm:$ktor_version"
+    }
+}
+iosMain {
+    dependencies {
+        implementation "org.jetbrains.kotlinx:kotlinx-serialization-runtime-native:$kotlinx_serialization_version"
+        implementation "io.ktor:ktor-client-serialization-iosx64:$ktor_version"
+        implementation "io.ktor:ktor-client-serialization-iosarm64:$ktor_version"
+    }
+}
+```
+
+Create data classes for the response
+```kotlin
+@Serializable
+data class User(
+    val id: Int,
+    val email: String,
+    val first_name: String,
+    val last_name: String,
+    val avatar: String
+)
+
+@Serializable
+data class GetUsersResponse(
+    val page: Int,
+    val per_page: Int,
+    val total: Int,
+    val total_pages: Int,
+    val data: List<User>
+)
+```
+
+You might need to add this dependency manually to the API class
+```
+import kotlinx.serialization.Serializable
+```
+
+Change the initialization of the (ktor)client to this:
+
+```kotlin
+private val client = HttpClient {
+    install(JsonFeature) {
+        serializer = KotlinxSerializer(Json.nonstrict).apply {
+            setMapper(GetUsersResponse::class, GetUsersResponse.serializer())
+        }
+    }
+}
+```
+
+Change the `API` and `GetUsersUseCase` to return `GetUsersResponse` instead of `String`. 
+
+
+
+
+
+## Step 4 - Async code
+
+Start by adding the following line to the commonMain target in the app's build.gradle file:
+
+```implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core-common:$kotlinx_coroutines_version"```
+
+and the following to androidMain
+
+```implementation "org.jetbrains.kotlinx:kotlinx-coroutines-android:$kotlinx_coroutines_version"```
+
+and last to iosMain
+
+```implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core-native:$kotlinx_coroutines_version"```
+
+Add this to ```android { ... }``` after ```buildTypes {...}```
+
+```
+packagingOptions {
+   exclude 'META-INF/*.kotlin_module'
+}
+```
+
+To make coroutines work for iOS we need to add this line to the root ```settings.gradle```
+
+```
+enableFeaturePreview('GRADLE_METADATA')
+```
+
+
