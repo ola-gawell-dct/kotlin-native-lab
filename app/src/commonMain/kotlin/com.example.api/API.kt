@@ -1,5 +1,6 @@
-package sample
+package com.example.api
 
+import com.example.data.User
 import io.ktor.client.HttpClient
 import io.ktor.client.features.json.JsonFeature
 import io.ktor.client.features.json.serializer.KotlinxSerializer
@@ -31,15 +32,6 @@ class KtorAPI: API {
         return client.get(buildUrl("users"))
     }
 }
-
-@Serializable
-data class User(
-    val id: Int,
-    val email: String,
-    val first_name: String,
-    val last_name: String,
-    val avatar: String
-)
 
 @Serializable
 data class GetUsersResponse(

@@ -1,4 +1,4 @@
-package sample
+package com.example
 
 import kotlinx.coroutines.CoroutineDispatcher
 

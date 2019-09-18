@@ -359,9 +359,10 @@ import kotlinx.coroutines.*
 import kotlin.coroutines.CoroutineContext
 
 class GetUsersUseCase(
-    val api: API,
-    var context: CoroutineContext = MainDispatcher
+    private val api: API
 ) {
+
+    var context: CoroutineContext = MainDispatcher
 
     private var job: Job = Job()
 
@@ -471,8 +472,66 @@ private val client = HttpClient {
 
 Change the `API` and `GetUsersUseCase` to return `GetUsersResponse` instead of `String`. 
 
+Test the use case in both Android and iOS.
+
+## Step 3 - Structure the code
+
+We will use the MVP pattern to move as much logic as possible to the common module. 
+
+Create a Presenter that takes a View interface as its argument and let the Activity/ViewController implement the View interface.
+
+This is one possible structure:
+
+```
+com.example
+    Expected.kt
+com.example.api
+    API.kt
+com.example.data
+    User.kt
+com.example.interactor
+    GetUsersUseCase
+com.example.presenter
+    MainViewPresenter
+        MainView (as an inner interface)
+```
+
+Here is an example how the presenter could look like:
+
+```kotlin
+package se.grapen.multibox.kotlinnative.presenter
+
+import com.example.api.API
+import com.example.api.GetUsersResponse
+import com.example.data.User
+import com.example.log
+import com.example.interactor.GetUsersUseCase
 
 
+class MainViewPresenter(
+    val api: API,
+    var view: MainView? = null
+) {
+
+    fun loadUsers() {
+        GetUsersUseCase(api).execute({ usersResponse: GetUsersResponse ->
+            log("Users repsonse in presenter: $usersResponse")
+            view?.showUsers(usersResponse.data)
+        }, {
+            log("Error: $it")
+        }, {
+            log("Cancelled: $it")
+        })
+    }
+
+}
+
+interface MainView {
+    fun showUsers(users: List<User>)
+}
+```
+
+Try to use the presenter both from Android and iOS
 
 
 ## Step 4 - Async code

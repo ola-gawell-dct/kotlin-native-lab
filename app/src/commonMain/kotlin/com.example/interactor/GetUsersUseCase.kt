@@ -1,5 +1,8 @@
-package sample
+package com.example.interactor
 
+import com.example.api.API
+import com.example.api.GetUsersResponse
+import com.example.MainDispatcher
 import kotlinx.coroutines.*
 import kotlin.coroutines.CoroutineContext
 

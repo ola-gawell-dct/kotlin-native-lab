@@ -1,4 +1,4 @@
-package sample
+package com.example
 
 import platform.darwin.dispatch_async
 import platform.darwin.dispatch_get_main_queue

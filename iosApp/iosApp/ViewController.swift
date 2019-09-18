@@ -1,24 +1,22 @@
 import UIKit
 import app
 
-class ViewController: UIViewController {
+class ViewController: UIViewController, MainView {
     override func viewDidLoad() {
         super.viewDidLoad()
         
-        let ktorApi = KtorAPI()
-        let useCase = GetUsersUseCase(api: ktorApi);
-        useCase.execute(onComplete: { (response) in
-            self.label.text = response.data[0].first_name
-            print(response)
-        }, onError: { (e) in
-            print(e)
-        }) { (e) in
-            print(e)
-        }
+        let ktorApi = KtorAPI();
+        let presenter = MainViewPresenter(api: ktorApi, view: self);
+        presenter.loadUsers()
     }
 
     override func didReceiveMemoryWarning() {
         super.didReceiveMemoryWarning()
     }
+    
     @IBOutlet weak var label: UILabel!
+    
+    func showUsers(users: [User]) {
+        self.label.text = users[0].first_name
+    }
 }
