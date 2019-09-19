@@ -350,6 +350,20 @@ iosMain {
 }
 ```
 
+Add this to ```android { ... }``` after ```buildTypes {...}```
+
+```
+packagingOptions {
+   exclude 'META-INF/*.kotlin_module'
+}
+```
+
+To make coroutines work for iOS we need to add this line to the root ```settings.gradle```
+
+```
+enableFeaturePreview('GRADLE_METADATA')
+```
+
 Create a simple interactor that creates a coroutines scope and calls the API function. It could look something like this:
 
 ```kotlin
@@ -533,33 +547,11 @@ interface MainView {
 
 Try to use the presenter both from Android and iOS
 
+## Step 4 - Dependency Injection
 
-## Step 4 - Async code
+## Step 5 - Database
 
-Start by adding the following line to the commonMain target in the app's build.gradle file:
+## Step 6 - Async code
 
-```implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core-common:$kotlinx_coroutines_version"```
-
-and the following to androidMain
-
-```implementation "org.jetbrains.kotlinx:kotlinx-coroutines-android:$kotlinx_coroutines_version"```
-
-and last to iosMain
-
-```implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core-native:$kotlinx_coroutines_version"```
-
-Add this to ```android { ... }``` after ```buildTypes {...}```
-
-```
-packagingOptions {
-   exclude 'META-INF/*.kotlin_module'
-}
-```
-
-To make coroutines work for iOS we need to add this line to the root ```settings.gradle```
-
-```
-enableFeaturePreview('GRADLE_METADATA')
-```
 
 
