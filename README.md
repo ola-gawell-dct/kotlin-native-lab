@@ -234,7 +234,7 @@ task copyFramework {
 </androidx.constraintlayout.widget.ConstraintLayout>
 ```
 
-7. Build the project by pressing the hammer in the toolbar. If there is any error during the build it is easier to get the log by building from the command line. Point your terminal to the project root and execute the command
+7. (Might need to untick Android (Experimental) -> "Only sync the active variant") Build the project by pressing the hammer in the toolbar. If there is any error during the build it is easier to get the log by building from the command line. Point your terminal to the project root and execute the command
 
 ```
 ./gradlew build
@@ -242,7 +242,7 @@ task copyFramework {
 
 #### Run on Android
 
-If the build was successfull the name `app` with an Android symbol infront should be displayed besides the hammer . Press the Play button to the right of `app` to start the Android app. If you see the string "Hello from Android" on the Android emulator everything worked as expected.
+If the build was successfull the name `app` with an Android symbol infront should be displayed besides the hammer. (If not working install Android support!!!) Press the Play button to the right of `app` to start the Android app. If you see the string "Hello from Android" on the Android emulator everything worked as expected.
 
 #### Run on iOS
 
@@ -254,7 +254,7 @@ Look around in the project and see if you can figure out why the Android and iOS
 
 ## Step 2 - HTTP Calls
 
-Add this to the `build.gradle` in app and sync.
+Add this to the `build.gradle` in app and sync. 
 
 ```
 commonMain {
@@ -286,6 +286,14 @@ iosMain {
         implementation "io.ktor:ktor-client-serialization-iosx64:$ktor_version"
         ...
     }
+}
+```
+
+Add this to ```android { ... }``` after ```buildTypes {...}```
+
+```
+packagingOptions {
+   exclude 'META-INF/*.kotlin_module'
 }
 ```
 
@@ -347,14 +355,6 @@ iosMain {
         implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core-native:$kotlinx_coroutines_version"
         ...
     }
-}
-```
-
-Add this to ```android { ... }``` after ```buildTypes {...}```
-
-```
-packagingOptions {
-   exclude 'META-INF/*.kotlin_module'
 }
 ```
 

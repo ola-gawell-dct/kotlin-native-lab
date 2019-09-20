@@ -12,9 +12,7 @@ interface API {
     suspend fun getUsers(): GetUsersResponse
 }
 
-class KtorAPI: API {
-
-    private val baseUrl: String = "https://reqres.in/api/"
+class KtorAPI(val baseUrl: String): API {
 
     private val client = HttpClient {
         install(JsonFeature) {

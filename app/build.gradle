@@ -64,6 +64,8 @@ kotlin {
 
                     implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core-common:$kotlinx_coroutines_version"
                     implementation "org.jetbrains.kotlinx:kotlinx-serialization-runtime:$kotlinx_serialization_version"
+
+                    implementation "org.kodein.di:kodein-di-erased:$kodein_version"
                 }
             }
             commonTest {
