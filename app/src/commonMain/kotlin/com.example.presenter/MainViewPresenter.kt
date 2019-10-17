@@ -1,16 +1,20 @@
-package se.grapen.multibox.kotlinnative.presenter
+package com.example.presenter
 
 import com.example.api.API
 import com.example.api.GetUsersResponse
 import com.example.data.User
 import com.example.log
 import com.example.interactor.GetUsersUseCase
+import org.kodein.di.Kodein
+import org.kodein.di.erased.instance
 
 
 class MainViewPresenter(
-    val api: API,
+    kodein: Kodein,
     var view: MainView? = null
 ) {
+
+    private val api: API by kodein.instance()
 
     fun loadUsers() {
         GetUsersUseCase(api).execute({ usersResponse: GetUsersResponse ->

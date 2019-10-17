@@ -54,12 +54,12 @@ Update the file gradle.properties with this content:
 kotlin.code.style=official
 
 # versions
-kotlin_version = 1.3.40
-kotlin_native_version = 1.3.40
-ktor_version = 1.2.2
+kotlin_version = 1.3.50
+kotlin_native_version = 1.3.50
+ktor_version = 1.2.4
 kotlinx_coroutines_version = 1.2.2
 kotlinx_serialization_version = 0.11.1
-kodein_version = 6.3.0
+kodein_version = 6.4.1
 
 # android
 gradle_android_version = 3.2.0
@@ -513,7 +513,7 @@ com.example.presenter
 Here is an example how the presenter could look like:
 
 ```kotlin
-package se.grapen.multibox.kotlinnative.presenter
+package com.example.presenter
 
 import com.example.api.API
 import com.example.api.GetUsersResponse
@@ -549,9 +549,87 @@ Try to use the presenter both from Android and iOS
 
 ## Step 4 - Dependency Injection
 
-## Step 5 - Database
+We will use a framework for dependency injection called [Kodein](https://github.com/Kodein-Framework/Kodein-DI).
+Kodein is not really dependency injection, but rather dependency/service locator, or as they call it: "dependency retrieval container".
 
-## Step 6 - Async code
+(If you participated in this lab before you might need to update you dependencies. For Kodein to work you need this):
+
+```properties
+kotlin_version = 1.3.50
+kotlin_native_version = 1.3.50
+ktor_version = 1.2.4
+kodein_version = 6.4.1
+``` 
+
+Start by adding the Kodein dependency to the app's build.gradle file
+
+```groovy
+commonMain {
+    dependencies {
+        ...
+        implementation "org.kodein.di:kodein-di-erased:$kodein_version"
+        ...
+    }
+}
+```
+
+Now we can create our base class for the dependency locator. Create a new package with the name `di` and create a class called KodeinDI with this content:
+
+```kotlin
+package com.example.di
+
+import com.example.api.API
+import org.kodein.di.Kodein
+import org.kodein.di.erased.bind
+import org.kodein.di.erased.instance
+import org.kodein.di.erased.provider
+import org.kodein.di.erased.singleton
+
+val kodein = Kodein {
+    bind<kotlin.String>("baseUrl") with provider { "https://reqres.in/api/" }
+    bind<API>() with singleton {
+        val baseUrl by kodein.instance<kotlin.String>("baseUrl")
+        com.example.api.KtorAPI(baseUrl)
+    }
+}
+
+class KodeinDI {
+    fun getKodein(): Kodein {
+        return kodein
+    }
+}
+```
+
+The class KodeinDI is needed for iOS.
+
+Change the MainViewPresenter to take in `Kodein` in it's constructor instead of `API`.
+
+````kotlin
+class MainViewPresenter(kodein: Kodein,var view: MainView? = null)
+```` 
+
+Now when you have access to the kodein instance (yes, I know, preferably your code shouldn't know about Kodein but I haven't found another way of doing it) you can fetch your dependencies from Kodein like this:
+
+```kotlin
+private val api: API by kodein.instance()
+```
+
+To use it from Android you can do like this:
+
+```kotlin
+val presenter = MainViewPresenter(kodein, this@MainActivity)
+```
+
+...and from iOS:
+
+```swift
+let kodeinImpl = KodeinDI().getKodein()
+let presenter = MainViewPresenter(kodein: kodeinImpl, view: self);
+```
+
+## Step 5 - Async code
+
+## Step 6 - Database
 
 
 
